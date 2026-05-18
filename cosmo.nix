@@ -9,7 +9,6 @@
 { unpins-lib }:
 pkgs:
 let
-  cs = import "${unpins-lib.outPath}/cosmocc.nix" { pkgs = pkgs.buildPackages; };
   cosmoPkgs = unpins-lib.lib.cosmoStaticCross pkgs;
 
   dispatcherC = ''
@@ -124,19 +123,13 @@ DISPATCHER_EOF
           rm -f $out/bin/find $out/bin/xargs
           install -m755 multicall/findutils $out/bin/findutils
         '';
-
-    postFixup = (oa.postFixup or "") + ''
-          ${cs.cosmocc}/bin/apelink \
-            -V ${toString cs.platformBits.windows} \
-            -o $out/bin/findutils.exe \
-            $out/bin/findutils
-          rm -f $out/bin/findutils
-        '';
   });
+
+  apelinked = unpins-lib.lib.cosmoApelink pkgs { binName = "findutils"; } patched;
 in
 unpins-lib.lib.withAliases cosmoPkgs
   {
     primary = "findutils.exe";
     aliases = appletAliases;
   }
-  patched
+  apelinked
