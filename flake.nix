@@ -8,14 +8,14 @@
 
   inputs.unpins-lib.url = "github:unpins/nix-lib";
 
-  # Linux/macOS: pkgsStatic.findutils via mkStandaloneFlake → post-link
-  # multicall recipe in `nix-lib/native/findutils.nix` combines `find` +
-  # `xargs` into a single `findutils` binary (lib.withAliases embeds the
-  # applet names as UNPIN_META). Windows: routed through Cosmopolitan
-  # (`windowsCosmo = true`) because mingw findutils pulls coreutils as a
-  # nativeBuildInputs dep, and coreutils on mingw fails in gnulib
-  # (lib/savewd.c waitpid) — see docs/platforms/mingw.md. The cosmo path
-  # has the same multicall recipe in `nix-lib/cosmo/findutils.nix`.
+  # Linux/macOS: pkgsStatic.findutils → post-link multicall recipe in
+  # ./multicall.nix combines `find` + `xargs` into a single `findutils`
+  # binary (lib.withAliases embeds the applet names as UNPIN_META).
+  # Windows: routed through Cosmopolitan (`windowsCosmo = true`) because
+  # mingw findutils pulls coreutils as a nativeBuildInputs dep, and
+  # coreutils on mingw fails in gnulib (lib/savewd.c waitpid) — see
+  # docs/platforms/mingw.md. The cosmo path has the same multicall recipe
+  # in `nix-lib/cosmo/findutils.nix`.
   outputs = { self, unpins-lib }:
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
@@ -23,5 +23,9 @@
       windowsCosmo = true;
       smoke = [ "--version" ];
       smokePattern = "find \\(GNU findutils\\)";
+      build = pkgs:
+        import ./multicall.nix {
+          lib = pkgs.lib // unpins-lib.lib;
+        } pkgs;
     };
 }
