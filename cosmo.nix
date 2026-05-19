@@ -125,11 +125,12 @@ DISPATCHER_EOF
         '';
   });
 
-  apelinked = unpins-lib.lib.cosmoApelink pkgs { binName = "findutils"; } patched;
 in
+# `findutils` → `findutils.exe` happens automatically via the cosmo
+# cross stdenv's apelink setup hook.
 unpins-lib.lib.withAliases cosmoPkgs
   {
     primary = "findutils.exe";
     aliases = appletAliases;
   }
-  apelinked
+  patched
