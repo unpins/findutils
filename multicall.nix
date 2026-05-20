@@ -24,8 +24,6 @@
 { lib }:
 pkgs:
 let
-  isTargetDarwin = pkgs.pkgsStatic.stdenv.hostPlatform.isDarwin;
-
   dispatcherC = ''
     #include <string.h>
     #include <stdio.h>
@@ -107,17 +105,29 @@ ${dispatcherC}
 DISPATCHER_EOF
       $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
-      ${if isTargetDarwin then ''
-        cp find/ftsfind.o find/ftsfind.o.renamed
-        cp xargs/xargs.o  xargs/xargs.o.renamed
-        $OBJCOPY --redefine-sym _main=_find_main  find/ftsfind.o.renamed
-        $OBJCOPY --redefine-sym _main=_xargs_main xargs/xargs.o.renamed
-      '' else ''
-        cp find/ftsfind.o find/ftsfind.o.renamed
-        cp xargs/xargs.o  xargs/xargs.o.renamed
-        $OBJCOPY --redefine-sym main=find_main  find/ftsfind.o.renamed
-        $OBJCOPY --redefine-sym main=xargs_main xargs/xargs.o.renamed
-      ''}
+      # Source-level rename: pre-process ftsfind.c/xargs.c with
+      # `-Dmain=<tool>_main` so cpp rewrites the name BEFORE compilation,
+      # producing .o (fat-LTO bitcode + native) where the symbol is
+      # already `find_main`/`xargs_main` on both sides.
+      #
+      # The natural alternative — `objcopy --redefine-sym` on the existing
+      # .o — only renames the native side; lto-plugin reads the bitcode
+      # side at final link and still sees `main`, leaving the dispatcher's
+      # `find_main`/`xargs_main` refs unresolved. `ld -r` to materialize
+      # bitcode → native first doesn't help either: gcc's ld -r preserves
+      # the bitcode side (output is again fat) unless we go through
+      # `-flinker-output=nolto-rel`, which then loses the LTO benefit for
+      # this object anyway.
+      #
+      # CPPFLAGS override is safe: automake's compile rule is
+      # `$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) …`
+      # — DEFS (HAVE_CONFIG_H etc.) and INCLUDES come from configure
+      # output, not from the env CPPFLAGS we replace here.
+      rm -f find/ftsfind.o xargs/xargs.o
+      make -C find  ftsfind.o CPPFLAGS="-Dmain=find_main"
+      make -C xargs xargs.o   CPPFLAGS="-Dmain=xargs_main"
+      mv find/ftsfind.o find/ftsfind.o.renamed
+      mv xargs/xargs.o  xargs/xargs.o.renamed
 
       install -m644 ${multicallMk} find/unpin-multicall.mk
       make -C find -f Makefile -f unpin-multicall.mk multicall-link
