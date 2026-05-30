@@ -9,9 +9,16 @@ Standalone build of [GNU findutils](https://www.gnu.org/software/findutils/) —
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-## Usage
+Ships one multicall executable, `findutils`; `unpin findutils` materializes `find` and `xargs` shims that dispatch by `argv[0]`. `locate` / `updatedb` are not included.
 
-The package ships one multicall executable, `findutils`. `unpin install` materializes `find` and `xargs` shims next to it; dispatch is by `argv[0]`.
+## Installation
+
+```bash
+unpin findutils        # install
+unpin run findutils    # run without installing
+```
+
+## Usage
 
 ```bash
 find . -name '*.md' -newer Makefile
@@ -27,7 +34,15 @@ nix build
 ./result/bin/findutils --version
 ```
 
-Linux x86_64 ships ~432 KB stripped; Windows x86_64 (via Cosmopolitan) ~1.1 MB.
+Linux x86_64 ~432 KB stripped; Windows x86_64 (via Cosmopolitan) ~1.1 MB.
+
+## Man pages
+
+`find.1` and `xargs.1` are embedded in the binary — read with `unpin man findutils`.
+
+## Manual download
+
+The [Releases](https://github.com/unpins/findutils/releases) page has standalone binaries.
 
 ## License
 
