@@ -24,46 +24,6 @@
 { lib }:
 pkgs:
 let
-  dispatcherC = ''
-    #include <string.h>
-    #include <stdio.h>
-    #include <strings.h>
-
-    int find_main(int argc, char *argv[]);
-    int xargs_main(int argc, char *argv[]);
-
-    int main(int argc, char *argv[])
-    {
-        const char *name = argv[0];
-        const char *slash = strrchr(name, '/');
-        if (slash) name = slash + 1;
-
-        static char buf[256];
-        size_t len = strlen(name);
-        if (len > 4 && !strcasecmp(name + len - 4, ".exe")) {
-            if (len - 4 >= sizeof(buf)) return 1;
-            memcpy(buf, name, len - 4);
-            buf[len - 4] = 0;
-            name = buf;
-        }
-        if (strncmp(name, "lt-", 3) == 0) name += 3;
-
-        if (strcmp(name, "findutils") == 0 && argc >= 2 && argv[1][0] != '-') {
-            name = argv[1];
-            argv++;
-            argc--;
-        }
-
-        if (strcmp(name, "find") == 0)  return find_main(argc, argv);
-        if (strcmp(name, "xargs") == 0) return xargs_main(argc, argv);
-
-        /* Default route: --version, --help, and binaries renamed by
-           the CI smoke step (smoke.exe) land in find. find's getopt
-           handles --version regardless of argv[0]. */
-        return find_main(argc, argv);
-    }
-  '';
-
   # Custom Makefile fragment lives in find/ — find_LDADD has the union of
   # link bits both tools need (libfindtools is find-only but harmless when
   # linked into a binary that has xargs's main too). $(top_builddir) is one
@@ -100,9 +60,12 @@ let
 
     postBuild = (old.postBuild or "") + ''
       mkdir -p multicall
-      cat > multicall/dispatcher.c <<'DISPATCHER_EOF'
-${dispatcherC}
-DISPATCHER_EOF
+      # applets.list (TSV name\tfn) for the shared Recipe-A dispatcher generator
+      # (see nix-lib lib.multicallTableDispatcherC). find/xargs are 1:1; a
+      # bare/unknown invocation routes to find (defaultApplet), whose getopt
+      # handles --version regardless of argv[0].
+      printf 'find\tfind\nxargs\txargs\n' > multicall/applets.list
+${lib.multicallTableDispatcherC { name = "findutils"; defaultApplet = "find"; }}
       $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
       # Source-level rename: pre-process ftsfind.c/xargs.c with
