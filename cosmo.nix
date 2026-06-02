@@ -11,46 +11,6 @@ pkgs:
 let
   cosmoPkgs = unpins-lib.lib.cosmoStaticCross pkgs;
 
-  dispatcherC = ''
-    #include <string.h>
-    #include <stdio.h>
-    #include <strings.h>
-
-    int find_main(int argc, char *argv[]);
-    int xargs_main(int argc, char *argv[]);
-
-    int main(int argc, char *argv[])
-    {
-        const char *name = argv[0];
-        const char *slash = strrchr(name, '/');
-        if (slash) name = slash + 1;
-
-        static char buf[256];
-        size_t len = strlen(name);
-        if (len > 4 && !strcasecmp(name + len - 4, ".exe")) {
-            if (len - 4 >= sizeof(buf)) return 1;
-            memcpy(buf, name, len - 4);
-            buf[len - 4] = 0;
-            name = buf;
-        }
-        if (strncmp(name, "lt-", 3) == 0) name += 3;
-
-        if (strcmp(name, "findutils") == 0 && argc >= 2 && argv[1][0] != '-') {
-            name = argv[1];
-            argv++;
-            argc--;
-        }
-
-        if (strcmp(name, "find") == 0)  return find_main(argc, argv);
-        if (strcmp(name, "xargs") == 0) return xargs_main(argc, argv);
-
-        /* Default route: --version, --help, and binaries renamed by
-           the CI smoke step (smoke.exe) land in find. find's getopt
-           handles --version regardless of argv[0]. */
-        return find_main(argc, argv);
-    }
-  '';
-
   multicallMk = cosmoPkgs.buildPackages.writeText "unpin-multicall.mk" ''
     MULTI_OUT ?= $(top_builddir)/multicall/findutils
 
@@ -105,9 +65,15 @@ let
 
     postBuild = (oa.postBuild or "") + ''
           mkdir -p multicall
-          cat > multicall/dispatcher.c <<'DISPATCHER_EOF'
-${dispatcherC}
-DISPATCHER_EOF
+          # applets.list (TSV name<TAB>fn) + the shared Recipe-A dispatcher
+          # generator (lib.multicallTableDispatcherC) — same as the native
+          # findutils/multicall.nix. find/xargs are 1:1; an unknown/bare name
+          # (incl. CI's renamed smoke.exe) routes to find (defaultApplet),
+          # whose getopt handles --version regardless of argv[0]. The helper's
+          # copy_basename strips a trailing `.exe`, a `\\` dir prefix (cosmo APE
+          # argv[0]), and a libtool `lt-` prefix before matching.
+          printf 'find\tfind\nxargs\txargs\n' > multicall/applets.list
+${unpins-lib.lib.multicallTableDispatcherC { name = "findutils"; defaultApplet = "find"; }}
           $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
           cp find/ftsfind.o find/ftsfind.o.renamed
