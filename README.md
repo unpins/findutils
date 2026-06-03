@@ -9,7 +9,7 @@ Standalone build of [GNU findutils](https://www.gnu.org/software/findutils/) —
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-Ships one multicall executable, `findutils`; `unpin install findutils` materializes `find` and `xargs` shims that dispatch by `argv[0]`. `locate` / `updatedb` are not included.
+Ships one multicall executable, `findutils`; `unpin install findutils` creates the `find` and `xargs` commands. `locate` / `updatedb` are not included.
 
 ## Usage
 
