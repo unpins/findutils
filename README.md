@@ -9,22 +9,30 @@ Standalone build of [GNU findutils](https://www.gnu.org/software/findutils/) —
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-Ships one multicall executable, `findutils`; `unpin install findutils` creates the `find` and `xargs` commands. `locate` / `updatedb` are not included.
-
 ## Usage
 
+Run a program with [unpin](https://github.com/unpins/unpin):
+
 ```bash
-find . -name '*.md' -newer Makefile
-find /var/log -type f -mtime +30 -delete
-echo file1 file2 file3 | xargs rm
-find . -name '*.o' -print0 | xargs -0 rm
+unpin findutils find . -name '*.md' -newer Makefile
+unpin findutils find /var/log -type f -mtime +30 -delete
+echo file1 file2 file3 | unpin findutils xargs rm
 ```
 
-To install it onto your PATH:
+To install the programs onto your PATH:
 
 ```bash
 unpin install findutils
 ```
+
+`unpin install findutils` creates the `find` and `xargs` commands. `locate` / `updatedb` are not included.
+
+## Programs
+
+| command | what it does |
+| --- | --- |
+| `find` | search a directory tree for files matching expressions |
+| `xargs` | build and run command lines from items read on stdin |
 
 ## Build locally
 
