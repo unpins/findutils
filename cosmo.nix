@@ -2,7 +2,8 @@
 # coreutils-x86_64-w64-mingw32 as a nativeBuildInputs dep and coreutils
 # on mingw dies in gnulib `lib/savewd.c` on `waitpid`).
 #
-# Same multicall recipe as findutils/multicall.nix (native): rename main →
+# Hand-rolled multicall recipe (cosmo-only — linux/darwin self-fold through
+# the unpin-llvm engine instead; see flake.nix): rename main →
 # {find,xargs}_main on each tool's object, ship a dispatcher.o, link
 # them with libfindtools.a + lib/libfind.a + gl/lib/libgnulib.a. cosmocc
 # uses ELF binutils + apelink in postFixup to produce findutils.exe.
@@ -66,8 +67,8 @@ let
     postBuild = (oa.postBuild or "") + ''
           mkdir -p multicall
           # applets.list (TSV name<TAB>fn) + the shared Recipe-A dispatcher
-          # generator (lib.multicallTableDispatcherC) — same as the native
-          # findutils/multicall.nix. find/xargs are 1:1; an unknown/bare name
+          # generator (lib.multicallTableDispatcherC).
+          # find/xargs are 1:1; an unknown/bare name
           # (incl. CI's renamed smoke.exe) routes to find (defaultApplet),
           # whose getopt handles --version regardless of argv[0]. The helper's
           # copy_basename strips a trailing `.exe`, a `\\` dir prefix (cosmo APE
