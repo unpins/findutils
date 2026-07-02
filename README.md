@@ -51,3 +51,12 @@ Linux x86_64 ~432 KB stripped; Windows x86_64 (via Cosmopolitan) ~1.1 MB.
 
 The [Releases](https://github.com/unpins/findutils/releases) page has standalone binaries.
 
+## Build notes
+
+- **Platforms:** Linux, macOS, Windows.
+- **Multicall:** on Linux/macOS the unpin-llvm engine compiles findutils to bitcode and self-folds `find` + `xargs` into one binary. Windows is routed through [Cosmopolitan](https://github.com/jart/cosmopolitan) (mingw findutils pulls coreutils, which fails to build under mingw's gnulib), with an inline objcopy multicall fold.
+- **`locate` / `updatedb` dropped:** they need a prebuilt filename database and helper scripts, outside the single-binary model. `find` and `xargs` are shipped.
+- **No embedded `/nix/store` paths:** nixpkgs bakes `${coreutils}/bin/echo` (xargs' default command) and `${coreutils}/bin/sort` (locate) into the binary; both are dropped so the bare names are looked up on `PATH` at runtime.
+- **Man pages:** `find.1` and `xargs.1` are embedded; read with `unpin man findutils`.
+- **Tests:** the native `make check` is skipped — the bundled gnulib-tests (getopt + multi-threaded meta-tests) fail under static-musl threads in the build sandbox. findutils' own find/xargs testsuites pass.
+

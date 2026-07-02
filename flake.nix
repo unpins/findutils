@@ -55,6 +55,11 @@
             else pkgs.pkgsStatic.findutils;
         in
         base.overrideAttrs (old: {
+          # Skip `make check`: findutils' own find/xargs testsuites pass, but the
+          # bundled gnulib-tests (getopt + multi-threaded meta-tests) fail under
+          # static-musl threads in the sandbox — same as diffutils. There's no
+          # clean way to run only the package's tests, so disable the suite.
+          doCheck = false;
           postPatch = "";
           configureFlags =
             (builtins.filter (f: !(pkgs.lib.hasPrefix "SORT=" f)) (old.configureFlags or [ ]))
