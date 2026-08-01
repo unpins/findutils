@@ -10,7 +10,7 @@
 
   # Linux/macOS: the unpin-llvm engine compiles pkgsStatic.findutils to bitcode
   # and the standalone self-folds `find` + `xargs` into one `findutils` binary
-  # (lib.withAliases embeds the applet names as UNPIN_META).
+  # (the applet names ship as embedded aliases).
   # Windows: routed through Cosmopolitan (`windowsBuild = import ./cosmo.nix
   # …`) because mingw findutils pulls coreutils as a nativeBuildInputs dep,
   # and coreutils on mingw fails in gnulib (lib/savewd.c waitpid) — see
