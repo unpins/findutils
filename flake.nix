@@ -21,7 +21,7 @@
       inherit self;
       name = "findutils";
       windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
-      smoke = [ "--version" ];
+      smoke = [ "--unpin-program=find" "--version" ];
       smokePattern = "find \\(GNU findutils\\)";
 
       # Build via the unpin-llvm engine + emit a bitcode multicall module. The
@@ -32,9 +32,6 @@
       engine = "unpin-llvm";
       multicall = {
         programs = [{ name = "find"; } { name = "xargs"; }];
-        # bare `findutils …` runs find (its getopt handles --version); the
-        # binary name `findutils` is not itself one of the applets.
-        defaultProgram = "find";
       };
       # nixpkgs hard-codes two coreutils store paths into findutils: xargs's
       # default command (`postPatch` rewrites `default_cmd[] = "echo"` →
