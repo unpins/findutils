@@ -68,13 +68,13 @@ let
           mkdir -p multicall
           # applets.list (TSV name<TAB>fn) + the shared Recipe-A dispatcher
           # generator (lib.multicallTableDispatcherC).
-          # find/xargs are 1:1; an unknown/bare name
-          # (incl. CI's renamed smoke.exe) routes to find (defaultApplet),
-          # whose getopt handles --version regardless of argv[0]. The helper's
-          # copy_basename strips a trailing `.exe`, a `\\` dir prefix (cosmo APE
-          # argv[0]), and a libtool `lt-` prefix before matching.
+          # find/xargs are 1:1; findutils is not itself a program, so a bare or
+          # unknown name lists instead of picking one — same as the native fold.
+          # The helper's copy_basename strips a trailing `.exe`, a `\\` dir
+          # prefix (cosmo APE argv[0]), and a libtool `lt-` prefix before
+          # matching.
           printf 'find\tfind\nxargs\txargs\n' > multicall/applets.list
-${unpins-lib.lib.multicallTableDispatcherC { name = "findutils"; defaultApplet = "find"; }}
+${unpins-lib.lib.multicallTableDispatcherC { name = "findutils"; }}
           $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
           cp find/ftsfind.o find/ftsfind.o.renamed
