@@ -7,7 +7,7 @@
 # {find,xargs}_main on each tool's object, ship a dispatcher.o, link
 # them with libfindtools.a + lib/libfind.a + gl/lib/libgnulib.a. cosmocc
 # uses ELF binutils + apelink in postFixup to produce findutils.exe.
-{ unpins-lib }:
+{ unpins-lib, winTable }:
 pkgs:
 let
   cosmoPkgs = unpins-lib.lib.cosmoStaticCross pkgs;
@@ -37,8 +37,6 @@ let
     		$(LIB_SETLOCALE_NULL) $(LIB_MBRTOWC)
   '';
 
-  appletAliases = [ "find" "xargs" ];
-
   # findutils's nixpkgs derivation bakes 3 references to coreutils into the
   # build (postPatch substitutes `${coreutils}/bin/echo` into xargs.c as the
   # default command; `SORT=${coreutils}/bin/sort` configureFlag is baked into
@@ -65,16 +63,12 @@ let
         '';
 
     postBuild = (oa.postBuild or "") + ''
-          mkdir -p multicall
-          # applets.list (TSV name<TAB>fn) + the shared Recipe-A dispatcher
-          # generator (lib.multicallTableDispatcherC).
-          # find/xargs are 1:1; findutils is not itself a program, so a bare or
-          # unknown name lists instead of picking one — same as the native fold.
-          # The helper's copy_basename strips a trailing `.exe`, a `\\` dir
-          # prefix (cosmo APE argv[0]), and a libtool `lt-` prefix before
-          # matching.
-          printf 'find\tfind\nxargs\txargs\n' > multicall/applets.list
-${unpins-lib.lib.multicallTableDispatcherC { name = "findutils"; }}
+          # applets.list + dispatcher.c, both rendered from the ONE table the
+          # flake declares (see `winTable` there). findutils is not itself a
+          # program, so the table's naming rule makes a bare or unknown name
+          # list instead of picking one — same as the native fold, from the
+          # same rule rather than by agreement.
+${winTable.emit { }}
           $CC -O2 -c -o multicall/dispatcher.o multicall/dispatcher.c
 
           cp find/ftsfind.o find/ftsfind.o.renamed
@@ -98,6 +92,6 @@ in
 unpins-lib.lib.withAliases cosmoPkgs
   {
     primary = "findutils.exe";
-    aliases = appletAliases;
+    aliases = winTable.announced;
   }
   patched

@@ -17,10 +17,18 @@
   # docs/platforms/mingw.md. The cosmo path carries its own objcopy multicall
   # recipe inline in `./cosmo.nix` (cosmocc is ELF, no engine).
   outputs = { self, unpins-lib }:
+    let
+      # The windows fold's whole dispatch table, declared once: ./cosmo.nix
+      # renders applets.list and the dispatcher from it, `withAliases` announces
+      # it, and `multicall.windowsTable` hands the same value to CI — which is
+      # the only way CI can check the .exe against anything but itself.
+      programs = [{ name = "find"; } { name = "xargs"; }];
+      winTable = unpins-lib.lib.multicallTableOf { name = "findutils"; inherit programs; };
+    in
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
       name = "findutils";
-      windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
+      windowsBuild = import ./cosmo.nix { inherit unpins-lib winTable; };
       smoke = [ "--unpin-program=find" "--version" ];
       smokePattern = "find \\(GNU findutils\\)";
 
@@ -31,7 +39,8 @@
       # link and emits module.bc; the mega merges them.
       engine = "unpin-llvm";
       multicall = {
-        programs = [{ name = "find"; } { name = "xargs"; }];
+        inherit programs;
+        windowsTable = winTable;
       };
       # nixpkgs hard-codes two coreutils store paths into findutils: xargs's
       # default command (`postPatch` rewrites `default_cmd[] = "echo"` →
