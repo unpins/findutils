@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [4.10.0-2] - 2026-09-26
+
 ### Fixed
 
 - `xargs` with no command works again. It defaults to `echo`, and the build had
