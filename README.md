@@ -42,7 +42,7 @@ unpin install findutils
 
 ```bash
 nix build
-./result/bin/findutils --version
+./result/bin/findutils --unpin-program=find --version
 ```
 
 Linux x86_64 ~432 KB stripped; Windows x86_64 (via Cosmopolitan) ~1.1 MB.
