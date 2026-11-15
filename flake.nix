@@ -61,11 +61,22 @@
             else pkgs.pkgsStatic.findutils;
         in
         base.overrideAttrs (old: {
-          # Skip `make check`: findutils' own find/xargs testsuites pass, but the
-          # bundled gnulib-tests (getopt + multi-threaded meta-tests) fail under
-          # static-musl threads in the sandbox — same as diffutils. There's no
-          # clean way to run only the package's tests, so disable the suite.
-          doCheck = false;
+          # findutils' own suites (find/, xargs/, tests/), not gnulib-tests,
+          # whose getopt and multi-threaded tests fail under static-musl threads
+          # in the sandbox. tests/'s one C program includes <error.h>, which
+          # musl lacks; gnulib builds it, the rule just doesn't point there.
+          # darwin-native stays off until checked on the Mac.
+          doCheck = pkgs.stdenv.hostPlatform.isLinux
+            && pkgs.stdenv.buildPlatform.canExecute pkgs.stdenv.hostPlatform;
+          nativeCheckInputs = (old.nativeCheckInputs or [ ]) ++ [ pkgs.buildPackages.dejagnu ];
+          checkPhase = ''
+            runHook preCheck
+            make -C find check VERBOSE=yes
+            make -C xargs check VERBOSE=yes
+            make -C tests check VERBOSE=yes \
+              CPPFLAGS="$CPPFLAGS -I$PWD -I$PWD/gl/lib" LIBS="$PWD/gl/lib/libgnulib.a"
+            runHook postCheck
+          '';
           postPatch = "";
           configureFlags =
             (builtins.filter (f: !(pkgs.lib.hasPrefix "SORT=" f)) (old.configureFlags or [ ]))
