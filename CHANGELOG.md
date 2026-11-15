@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- On Windows, `xargs` and `find -exec` find programs on `PATH` by their plain
+  name: `xargs where` or `find . -exec hostname ;` failed with `No such file or
+  directory` unless you wrote `where.exe`.
+- On Windows, `xargs` with no command runs `echo` from `PATH`, as on Linux and
+  macOS. It pointed at a path that only existed on the build machine.
+- On Linux and macOS, `findutils --unpin-program=find` (or `xargs`) prefixes
+  its messages with the program's name, `find: …`, instead of `findutils: …`.
+
 ## [4.10.0-2] - 2026-09-26
 
 ### Fixed
