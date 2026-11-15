@@ -81,6 +81,11 @@
           configureFlags =
             (builtins.filter (f: !(pkgs.lib.hasPrefix "SORT=" f)) (old.configureFlags or [ ]))
             ++ [ "SORT=sort" ];
+          # find/ and xargs/ compile the build prefix in as LOCALEDIR, a
+          # `/nix/store` path no user has (their Makefile.am hardcodes
+          # `localedir`, so --localedir doesn't reach them). Look translations
+          # up where upstream's prefix=/usr default puts them.
+          buildFlags = (old.buildFlags or [ ]) ++ [ "localedir=/usr/share/locale" ];
         });
     };
 }
