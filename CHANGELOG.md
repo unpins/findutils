@@ -2,8 +2,17 @@
 
 ## [Unreleased]
 
+### Changed
+
+- findutils' own test suites now run on every native Linux build (about 600
+  `find` and `xargs` checks), so a regression fails the build instead of
+  shipping.
+
 ### Fixed
 
+- On Linux and macOS, the binary no longer carries the path of the build
+  machine's translation directory (a `/nix/store/…` path no user has); it
+  looks for translations under `/usr/share/locale`, as upstream does.
 - On Windows, `xargs` and `find -exec` find programs on `PATH` by their plain
   name: `xargs where` or `find . -exec hostname ;` failed with `No such file or
   directory` unless you wrote `where.exe`.

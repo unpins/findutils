@@ -56,5 +56,5 @@ The [Releases](https://github.com/unpins/findutils/releases) page has standalone
 - **Windows:** built via [Cosmopolitan](https://github.com/jart/cosmopolitan) (mingw findutils pulls coreutils, which fails to build under mingw's gnulib).
 - **`locate` / `updatedb` dropped:** they need a prebuilt filename database and helper scripts, outside the single-binary model. `find` and `xargs` are shipped.
 - **No embedded `/nix/store` paths:** nixpkgs bakes `${coreutils}/bin/echo` (xargs' default command) and `${coreutils}/bin/sort` (locate) into the binary; both are dropped so the bare names are looked up on `PATH` at runtime.
-- **Tests:** the native `make check` is skipped — the bundled gnulib-tests (getopt + multi-threaded meta-tests) fail under static-musl threads in the build sandbox. findutils' own find/xargs testsuites pass.
+- **Tests:** findutils' own test suites (find, xargs and `tests/`) run on native Linux builds (0 failures under static-musl) and are skipped on cross targets the build host can't execute. gnulib's library tests are left out: its getopt and multi-threaded tests fail under static musl in the build sandbox.
 
