@@ -37,18 +37,12 @@ let
     		$(LIB_SETLOCALE_NULL) $(LIB_MBRTOWC)
   '';
 
-  # findutils's nixpkgs derivation bakes 3 references to coreutils into the
-  # build (postPatch substitutes `${coreutils}/bin/echo` into xargs.c as the
-  # default command; `SORT=${coreutils}/bin/sort` configureFlag is baked into
-  # the compiled binary; buildInputs = [ coreutils ] adds it as runtime dep).
-  # All three are dead references for our shipped artifact: we ship find +
-  # xargs only (locate/updatedb live in the `$locate` output we drop), and
-  # the xargs default-echo path is never invoked on Windows (callers always
-  # pass an explicit command). Override `coreutils` to the linux-native one
-  # so coreutils-cross is no longer pulled into findutils-cross's drv graph
-  # — that would otherwise require a cosmo-patched coreutils-cross to be
-  # buildable, recreating the transitive overlay coupling we're trying to
-  # remove from `nix-lib/cosmo/`.
+  # nixpkgs bakes coreutils into findutils: postPatch rewrites xargs's default
+  # command to `${coreutils}/bin/echo`, and `SORT=${coreutils}/bin/sort` is a
+  # configureFlag. Both are dropped below, as in the native build (flake.nix):
+  # xargs with no command runs bare `echo`, looked up on PATH. The override
+  # keeps coreutils-cross out of the drv graph — coreutils is now only a
+  # build-time input.
   patched = (cosmoPkgs.findutils.override { coreutils = pkgs.coreutils; }).overrideAttrs (oa: {
     pname = "findutils-multi";
 
@@ -57,10 +51,14 @@ let
     # `(void) __STDC_LIMIT_MACROS;` to silence an unused-define
     # warning — with the empty macro that becomes `(void) ;`, a
     # parse error. Replace with `(void) 0;`, same semantics.
-    postPatch = (oa.postPatch or "") + ''
+    postPatch = ''
           substituteInPlace xargs/xargs.c \
             --replace-fail '(void) __STDC_LIMIT_MACROS;' '(void) 0;'
         '';
+
+    configureFlags =
+      (builtins.filter (f: !(pkgs.lib.hasPrefix "SORT=" f)) (oa.configureFlags or [ ]))
+      ++ [ "SORT=sort" ];
 
     postBuild = (oa.postBuild or "") + ''
           # applets.list + dispatcher.c, both rendered from the ONE table the
